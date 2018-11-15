@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿using System.Collections.Generic;
 using System.Web.Mvc;
 
 namespace Patients.Controllers
@@ -13,18 +10,35 @@ namespace Patients.Controllers
             return View();
         }
 
-        public ActionResult About()
+        public JsonResult Query(string id)
         {
-            ViewBag.Message = "Your application description page.";
+            List<Patient> patients = new List<Patient>
+            {
+                new Patient("Roy"),
+                new Patient("Lydia")
+            };
 
-            return View();
+            return Json(patients, JsonRequestBehavior.AllowGet);
         }
 
-        public ActionResult Contact()
+        [HttpPost]
+        public JsonResult GetPatient(string patient)
         {
-            ViewBag.Message = "Your contact page.";
+            List<Patient> patients = new List<Patient>
+            {
+                new Patient(patient),
+            };
 
-            return View();
+            return Json(patients, JsonRequestBehavior.AllowGet);
+        }
+
+        public class Patient 
+        {
+            public string Name { get; set;}
+            public Patient(string name)
+            {
+                Name = name;
+            }
         }
     }
 }

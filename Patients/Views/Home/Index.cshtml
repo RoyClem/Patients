@@ -2,30 +2,174 @@
     ViewBag.Title = "Home Page";
 }
 
-<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
+@*<form action="@Url.Action("GetPatient", "Home")" method="post">
+  <input type="hidden" id="queryCode" name="queryCode" />
+  <input type="text" name="queryString" id="queryString" placeholder="Client Name">
+  <button id="queryButton" type="submit">Get</button>
+</form>*@
+
+<div>
+  <input type="text" name="queryString" id="queryString" placeholder="Client Name">
+  <button id="btnClear" type="submit">Clear</button>
+  <input type="hidden" id="queryCode" name="queryCode" />
+</div>
+<br />
+<div id="results"></div>
+<br />
+<br />
+<br />
+
+
+
+<div id="the-basics">
+  <input class="typeahead" type="text" placeholder="States of USA">
+</div>
+<br>
+<div id="bloodhound">
+  <input class="typeahead" type="text" placeholder="States of USA">
+</div>
+<br>
+<div id="remote">
+  <input class="typeahead" type="text" placeholder="Oscar winners for Best Picture">
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <h2>Getting started</h2>
-        <p>
-            ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-            enables a clean separation of concerns and gives you full control over markup
-            for enjoyable, agile development.
-        </p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Get more libraries</h2>
-        <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Web Hosting</h2>
-        <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
-    </div>
-</div>
+@section scripts {
+
+<script src="~/Scripts/bloodhound.js"></script>
+<script src="~/Scripts/typeahead.jquery.js"></script>
+
+
+<script>
+
+    $(document).ready(function () {
+
+        var substringMatcher = function (strs) {
+            return function findMatches(q, cb) {
+                var matches, substringRegex;
+
+                // an array that will be populated with substring matches
+                matches = [];
+
+                // regex used to determine if a string contains the substring `q`
+                substrRegex = new RegExp(q, 'i');
+
+                // iterate through the pool of strings and for any string that
+                // contains the substring `q`, add it to the `matches` array
+                $.each(strs, function (i, str) {
+                    if (substrRegex.test(str)) {
+                        matches.push(str);
+                    }
+                });
+
+                cb(matches);
+            };
+        };
+
+        var states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
+            'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii',
+            'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
+            'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+            'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+            'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
+            'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+            'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+            'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+        ];
+
+        $('#the-basics .typeahead').typeahead({
+          hint: true,
+          highlight: true,
+          minLength: 2
+        },
+        {
+            name: 'states',
+            source: substringMatcher(states)
+        });
+
+        var bloodstates = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.whitespace,
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local: states
+        });
+
+        $('#bloodhound .typeahead').typeahead({
+          hint: true,
+          highlight: true,
+          minLength: 2
+        },
+        {
+            name: 'states',
+            source: bloodstates
+        });
+
+        var bestPictures = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          //prefetch: '../data/films/post_1960.json',
+          remote: {
+            url: '../Home/Query/%QUERY',
+            wildcard: '%QUERY'
+          }
+        });
+
+        $('#remote .typeahead').typeahead(
+        {
+          hint: true,
+          highlight: true,
+          minLength: 2
+        },
+        {
+            name: 'Name',
+            display: 'Name',
+            source: bestPictures
+        });
+
+
+
+        var patients = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          remote: {
+            url: '../Home/Query/%QUERY',
+            wildcard: '%QUERY'
+          }
+        });
+
+        $('#queryString').typeahead(
+        {
+          hint: true,
+          highlight: true,
+          minLength: 2
+        },
+        {
+            name: 'Name',
+            display: 'Name',
+            source: patients
+        });
+
+        $('#queryString').on('typeahead:selected', function (e, data) {
+            $("#queryCode").val(data.Name);
+            //$("#queryButton").click();
+           $.post( '/Home/GetPatient/', { patient: data.Name })
+               .done(function (data) {
+                   data.forEach(function (item) {
+                       $("#results").append(item.Name + "<br />");
+                    //   alert("Data Loaded: " + item.Name);
+                   });
+            });
+        });
+
+
+        // use to clear the field
+        $('#btnClear').on('click', function () {
+            $('#queryString').val(''); 
+            $("#queryCode").val('');
+        });
+
+
+    });
+
+
+</script>
+
+}
